@@ -1,0 +1,211 @@
+#!/usr/bin/env bash
+set -e
+
+AVATARPIXELS=48
+FORCE=false
+MONTAGEWIDTH=58
+ORGANIZATION=
+PRESERVE=false
+TEAM=
+
+__USAGE="
+Generate montage from GitHub user avatars.
+
+USAGE
+  $(basename $0) [options] <organization>
+  $(basename $0) [options] <organization>/<team>
+
+FLAGS
+  -a, --avatar-pixels <integer>       Size of GitHub avatar icons in pixels; default '$AVATARPIXELS'
+  -d, --debug                         Enable debugging
+  -f, --force                         Whether to overwrite output file if it exists
+  -m, --montage-width <integer>       Width of GitHub montage in number of avatar icons; default '$MONTAGEWIDTH'
+  -o, --output-file <montage-file>    Name of GitHub montage file to generate without '.jpg' extension
+  -p, --preserve                      Preserve temporary directory containing data
+";
+
+die() {
+	printf "\nError: %s\n" "$1"
+	echo "$__USAGE"
+	exit 1
+}
+
+if ! type -p gh > /dev/null; then
+	die "'gh' could not be found"
+fi
+
+if ! type -p montage > /dev/null; then
+	die "'montage' could not be found"
+fi
+
+
+while getopts "a:dfhm:p-:" OPT; do
+	if [ "$OPT" = "-" ]; then    # long option: reformulate OPT and OPTARG
+		OPT="${OPTARG%%=*}"      # extract long option name
+		OPTARG="${OPTARG#$OPT}"	 # extract long option argument (may be empty)
+		OPTARG="${OPTARG#=}"     # if long option argument, remove assigning `=`
+	fi
+
+	case "$OPT" in
+
+		avatar-pixels | a)
+			AVATARPIXELS="${OPTARG}"
+			;;
+
+		debug | d)
+			set -x
+			;;
+
+		force | f)
+			FORCE=true
+			;;
+
+		help | h)
+			echo "$__USAGE"
+			exit 0
+			;;
+
+		montage-file | f)
+			MONTAGEFILE="${OPTARG}.jpg"
+			;;
+
+		montage-width | m)
+			MONTAGEWIDTH="${OPTARG}"
+			;;
+
+		preserve | p)
+			PRESERVE=true
+			;;
+	esac
+done
+
+# shift so that $@, $1, etc. refer to the non-option arguments
+shift "$((OPTIND-1))"
+
+if [ -z "$1" ]; then
+	die "Must provide organization or organization/team"
+elif [[ "$1" == *"/"* ]]; then
+	ORGANIZATION=$(echo $1 | cut -d '/' -f 1)
+	TEAM=$(echo $1 | cut -d '/' -f 2)
+
+	if [ -z "${MONTAGEFILE}" ]; then
+		MONTAGEFILE="$ORGANIZATION-$TEAM-$AVATARPIXELS.jpg"
+	fi
+else
+	ORGANIZATION="$1"
+
+	if [ -z "${MONTAGEFILE}" ]; then
+		MONTAGEFILE="$ORGANIZATION-$AVATARPIXELS.jpg"
+	fi
+fi
+
+# Handle situation if previous montage file exists
+if test -f "$MONTAGEFILE"; then
+
+	if ! $FORCE; then
+		die "$MONTAGEFILE exists; -f, --force will delete if exists"
+	fi
+
+	echo "Deleting previous montage file:  $MONTAGEFILE"
+	rm -f $MONTAGEFILE
+fi
+
+# Prepare temporary working directory for downloaded user avatars and generated script
+TMPDIR="$(mktemp -d -t gh-montage)"
+TMPFILE="$TMPDIR/generate-montage.sh"
+
+echo "Created temporary directory for generating GitHub montage:  $TMPDIR"
+
+if ! $PRESERVE; then
+	trap 'rm -rf -- "$TMPDIR"' EXIT
+fi
+
+# Determine how many GitHub user
+if [ -z "${TEAM}" ]; then
+	QUERY='
+	query CountOrgAvatars($login: String!) {
+		organization(login: $login) {
+			membersWithRole {
+				totalCount
+			}
+		}
+	}'
+
+	JQ='.data.organization.membersWithRole.totalCount'
+else
+	QUERY='
+	query CountOrgTeamAvatars($login: String!, $slug: String!) {
+		organization(login: $login) {
+			team(slug: $slug) {
+				members(first: 100, after: $endCursor) {
+					totalCount
+				}
+			}
+		}
+	}'
+
+	JQ='.data.organization.team.members.totalCount'
+fi
+
+AVATARCOUNT=$(gh api graphql -f query="${QUERY}" -F login="$ORGANIZATION" -F slug="$TEAM" --jq "$JQ")
+echo "GitHub avatars found:  $AVATARCOUNT"
+
+# Generate script commands to download GitHub user avatar images sized accordingly
+if [ -z "${TEAM}" ]; then
+	QUERY='
+	query GetOrgAvatars($login: String!, $endCursor: String) {
+		organization(login: $login) {
+			membersWithRole(first: 100, after: $endCursor) {
+				pageInfo {
+					endCursor
+					hasNextPage
+				}
+				nodes {
+					avatarUrl
+					databaseId
+				}
+			}
+		}
+	}'
+
+	TEMPLATE="
+{{ range .data.organization.membersWithRole.nodes }}
+curl -s \"{{ .avatarUrl }}\" --output $TMPDIR/{{ .databaseId }}.jpg
+{{ end }}"
+else
+	QUERY='
+	query GetOrgTeamAvatars($login: String!, $slug: String!, $endCursor: String) {
+		organization(login: $login) {
+			team(slug: $slug) {
+				members(first: 100, after: $endCursor) {
+					pageInfo {
+						endCursor
+						hasNextPage
+					}
+					nodes {
+						avatarUrl
+						databaseId
+					}
+				}
+			}
+		}
+	}'
+
+	TEMPLATE="
+{{ range .data.organization.team.members.nodes }}
+curl -s \"{{ .avatarUrl }}\" --output $TMPDIR/{{ .databaseId }}.jpg
+{{ end }}"
+fi
+
+echo "Generating GitHub montage script:  $TMPFILE"
+gh api graphql -f query="${QUERY}" -F login="$ORGANIZATION" -F slug="$TEAM" --paginate --template="${TEMPLATE}" >> $TMPFILE
+
+# Conclude script creation with commands to generate montage and execute
+cat << EOF >> $TMPFILE
+
+montage $TMPDIR/*.jpg  -resize ${AVATARPIXELS}x${AVATARPIXELS} -mode Concatenate -tile ${MONTAGEWIDTH}x $MONTAGEFILE
+EOF
+
+echo "Retrieving GitHub user avatars and generating montage"
+bash $TMPFILE
+echo "Created montage image:  $MONTAGEFILE"
