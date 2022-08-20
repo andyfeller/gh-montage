@@ -1,3 +1,5 @@
+![github-ps-delivery-48](https://user-images.githubusercontent.com/2089743/185767087-4ac37f9d-83dd-4b42-ba04-402279ca3bda.jpg)
+
 # gh-montage
 
 A `gh` extension to generate GitHub user avatar montage from an organization or organization team.
