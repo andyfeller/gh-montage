@@ -4,7 +4,7 @@
 
 A `gh` extension to generate GitHub user avatar montage from an organization or organization team.
 
-I must give thanks to @martinwoodward because [his gist](https://gist.github.com/martinwoodward/288812fa142e0b1153f60b9555b3d978) was the foundation for this extension!  Thank you so much, Martin, for finding creative and clever ways to showcase GitHub users! :bow:
+I must give thanks to [@martinwoodward](https://github.com/martinwoodward) because [his gist](https://gist.github.com/martinwoodward/288812fa142e0b1153f60b9555b3d978) was the foundation for this extension!  Thank you so much, Martin, for finding creative and clever ways to showcase GitHub users! :bow:
 
 ## Quickstart
 
