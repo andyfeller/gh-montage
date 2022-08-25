@@ -32,7 +32,7 @@ FLAGS
   -d, --debug                         Enable debugging
   -f, --force                         Whether to overwrite output file if it exists
   -m, --montage-width <integer>       Width of GitHub montage in number of avatar icons; default '58'
-  -o, --output-file <montage-file>    Name of GitHub montage file to generate without '.jpg' extension
+  -o, --output-file <output-file>     Name of GitHub montage file to generate, without '.jpg' extension
   -p, --preserve                      Preserve temporary directory containing data
 ```
 
