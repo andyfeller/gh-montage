@@ -111,7 +111,7 @@ if test -f "$MONTAGEFILE"; then
 fi
 
 # Prepare temporary working directory for downloaded user avatars and generated script
-TMPDIR="$(mktemp -d -t gh-montage)"
+TMPDIR="$(mktemp -d -t gh-montageXXX)"
 TMPFILE="$TMPDIR/generate-montage.sh"
 
 echo "Created temporary directory for generating GitHub montage:  $TMPDIR"
