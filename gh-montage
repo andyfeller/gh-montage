@@ -21,7 +21,7 @@ FLAGS
   -d, --debug                         Enable debugging
   -f, --force                         Whether to overwrite output file if it exists
   -m, --montage-width <integer>       Width of GitHub montage in number of avatar icons; default '$MONTAGEWIDTH'
-  -o, --output-file <output-file>     Name of GitHub montage file to generate, without '.jpg' extension
+  -o, --output-file <output-file>     Name of GitHub montage file to generate, without '.png' extension
   -p, --preserve                      Preserve temporary directory containing data
 ";
 
@@ -71,7 +71,7 @@ while getopts "a:dfhm:o:p-:" OPT; do
 			;;
 
 		output-file | o)
-			OUTPUTFILE="${OPTARG}.jpg"
+			OUTPUTFILE="${OPTARG}.png"
 			;;
 
 		preserve | p)
@@ -90,13 +90,13 @@ elif [[ "$1" == *"/"* ]]; then
 	TEAM=$(echo $1 | cut -d '/' -f 2)
 
 	if [ -z "${OUTPUTFILE}" ]; then
-		OUTPUTFILE="$ORGANIZATION-$TEAM-$AVATARPIXELS.jpg"
+		OUTPUTFILE="$ORGANIZATION-$TEAM-$AVATARPIXELS.png"
 	fi
 else
 	ORGANIZATION="$1"
 
 	if [ -z "${OUTPUTFILE}" ]; then
-		OUTPUTFILE="$ORGANIZATION-$AVATARPIXELS.jpg"
+		OUTPUTFILE="$ORGANIZATION-$AVATARPIXELS.png"
 	fi
 fi
 
@@ -204,7 +204,7 @@ gh api graphql -f query="${QUERY}" -F login="$ORGANIZATION" -F slug="$TEAM" --pa
 # Conclude script creation with commands to generate montage and execute
 cat << EOF >> $TMPFILE
 
-montage $TMPDIR/*.jpg  -resize ${AVATARPIXELS}x${AVATARPIXELS} -mode Concatenate -tile ${MONTAGEWIDTH}x $OUTPUTFILE
+montage $TMPDIR/*.jpg  -resize ${AVATARPIXELS}x${AVATARPIXELS} -mode Concatenate -tile ${MONTAGEWIDTH}x -background none $OUTPUTFILE
 EOF
 
 echo "Retrieving GitHub user avatars and generating montage"
