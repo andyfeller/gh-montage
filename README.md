@@ -18,19 +18,25 @@ I must give thanks to [@martinwoodward](https://github.com/martinwoodward) becau
 
 ## Usage
 
+> **Note**
+> Processing username files assumes 1 username per line and will fail if any username is invalid.
+> This is because `gh-montage` is not retrieving usernames from GitHub API before processing them.
+
 ```shell
 $ gh montage --help
 
 Generate montage from GitHub user avatars.
 
 USAGE
-  gh-montage [options] <organization>
-  gh-montage [options] <organization>/<team>
+  gh montage [options] <organization>
+  gh montage [options] <organization>/<team>
+  gh montage [options] <path/to/username file>
 
 FLAGS
   -a, --avatar-pixels <integer>       Size of GitHub avatar icons in pixels; default '48'
   -d, --debug                         Enable debugging
   -f, --force                         Whether to overwrite output file if it exists
+  -h, --help                          Displays help usage
   -m, --montage-width <integer>       Width of GitHub montage in number of avatar icons; default '58'
   -o, --output-file <output-file>     Name of GitHub montage file to generate, without '.jpg' extension
   -p, --preserve                      Preserve temporary directory containing data
