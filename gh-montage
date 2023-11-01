@@ -88,13 +88,6 @@ shift "$((OPTIND-1))"
 
 if [ -z "$1" ]; then
 	die "Must provide organization or organization/team"
-elif [[ "$1" == *"/"* ]]; then
-	ORGANIZATION=$(echo $1 | cut -d '/' -f 1)
-	TEAM=$(echo $1 | cut -d '/' -f 2)
-
-	if [ -z "${OUTPUTFILE}" ]; then
-		OUTPUTFILE="$ORGANIZATION-$TEAM-$AVATARPIXELS.png"
-	fi
 elif [ -f "$1" ]; then
 	# If argument is valid file, read usernames from file
 	USERS_FILE="$1"
@@ -106,6 +99,13 @@ elif [ -f "$1" ]; then
 
 	if [ -z "${OUTPUTFILE}" ]; then
 		OUTPUTFILE="$(basename ""$USERS_FILE"").png"
+	fi
+elif [[ "$1" == *"/"* ]]; then
+	ORGANIZATION=$(echo $1 | cut -d '/' -f 1)
+	TEAM=$(echo $1 | cut -d '/' -f 2)
+
+	if [ -z "${OUTPUTFILE}" ]; then
+		OUTPUTFILE="$ORGANIZATION-$TEAM-$AVATARPIXELS.png"
 	fi
 else
 	ORGANIZATION="$1"
